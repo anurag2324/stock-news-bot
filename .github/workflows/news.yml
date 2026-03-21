@@ -2,7 +2,7 @@ name: Daily News Bot
 
 on:
   schedule:
-    - cron: '0 3 * * *'   # Runs at 8:30 AM IST (3:00 UTC)
+    - cron: '44 6 * * *'   # 12:14 PM IST (06:44 UTC)
   workflow_dispatch:
 
 jobs:
