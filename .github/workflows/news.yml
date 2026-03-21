@@ -2,7 +2,7 @@ name: Daily News Bot
 
 on:
   schedule:
-    - cron: '0 3 * * *'   # 8:30 AM IST
+    - cron: '0 3 * * *'   # Runs at 8:30 AM IST (3:00 UTC)
   workflow_dispatch:
 
 jobs:
@@ -10,17 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.10'
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: Install dependencies
-      run: |
-        pip install feedparser requests
+      - name: Install dependencies
+        run: |
+          pip install feedparser requests
 
-    - name: Run script
-      run: python news_bot.py
+      - name: Run script
+        run: python news_bot.py
+        env:
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
