@@ -7,7 +7,7 @@ from datetime import datetime
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = [
+CHAT_IDs = [
     os.getenv("PERSONAL_CHAT_ID"),
     os.getenv("GROUP_CHAT_ID")
 ]
@@ -193,13 +193,17 @@ final_message = (
 # -------- SEND TO TELEGRAM --------
 url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-
-for cid in CHAT_ID:
-    requests.post(url, data={
-        "chat_id": cid,
-        "text": final_message,
-        "parse_mode": "Markdown",
-		"disable_web_page_preview": True
-    })
+for cid in CHAT_IDs:
+    if cid:
+        response = requests.post(
+            url,
+            data={
+                "chat_id": cid,
+                "text": final_message,
+                "parse_mode": "Markdown",
+                "disable_web_page_preview": True
+            }
+        )
+        print(f"Sent to {cid}: ", response.text)
 
 print("✅ News + Market sent successfully!")
