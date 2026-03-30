@@ -7,7 +7,11 @@ from datetime import datetime
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+CHAT_ID = [
+    os.getenv("PERSONAL_CHAT_ID"),
+    os.getenv("GROUP_CHAT_ID")
+]
+
 
 # -------- SYMBOLS WITH EMOJIS --------
 symbols = {
@@ -189,14 +193,13 @@ final_message = (
 # -------- SEND TO TELEGRAM --------
 url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
-requests.post(
-    url,
-    data={
-        "chat_id": CHAT_ID,
+
+for cid in CHAT_ID:
+    requests.post(url, data={
+        "chat_id": cid,
         "text": final_message,
         "parse_mode": "Markdown",
-        "disable_web_page_preview": True
-    }
-)
+		"disable_web_page_preview": True
+    })
 
 print("✅ News + Market sent successfully!")
