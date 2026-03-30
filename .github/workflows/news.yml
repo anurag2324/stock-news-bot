@@ -18,10 +18,13 @@ jobs:
         with:
           python-version: '3.10'
 
+      # ✅ Install all required dependencies
       - name: Install dependencies
         run: |
-          pip install feedparser requests
+          python -m pip install --upgrade pip
+          pip install yfinance feedparser requests pandas
 
+      # ✅ Run your bot
       - name: Run script
         run: python news_bot.py
         env:
