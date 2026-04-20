@@ -141,45 +141,15 @@ market_message = (
 analysis_text = generate_market_analysis(summary_changes)
 
 # -------- FETCH NEWS --------
-urls = [
-    "https://news.google.com/rss/search?q=india+stock+market",
-    "https://news.google.com/rss/search?q=crude+oil+price",
-    "https://news.google.com/rss/search?q=defence+india",
-    "https://news.google.com/rss/search?q=earnings+india+stocks"
+news_sources = [
+    "https://www.moneycontrol.com/",
+    "https://economictimes.indiatimes.com/",
+    "https://www.bseindia.com/",
+    "https://www.investing.com/",
+    "https://www.cnbc.com/"
 ]
 
-keywords = ["order", "deal", "earnings", "profit", "crude", "war", "contract"]
-
-filtered_news = []
-seen = set()
-
-def get_sector(title):
-    if "defence" in title:
-        return "DEFENCE"
-    elif "crude" in title or "oil" in title:
-        return "OIL"
-    elif "solar" in title or "ev" in title:
-        return "EV"
-    return "GENERAL"
-
-for url in urls:
-    feed = feedparser.parse(url)
-    for entry in feed.entries:
-        title = entry.title.lower()
-
-        if any(k in title for k in keywords):
-            if entry.title not in seen:
-                sector = get_sector(title)
-                news_item = f"[{sector}] {entry.title}\n{entry.link}"
-                filtered_news.append(news_item)
-                seen.add(entry.title)
-
-top_news = filtered_news[:5]
-
-if not top_news:
-    news_message = "No major tradeable news today."
-else:
-    news_message = "\n\n".join(top_news)
+news_message = "\n\n".join([f"📰 {url}" for url in news_sources])
 
 # -------- FINAL MESSAGE --------
 final_message = (
