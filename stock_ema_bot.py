@@ -7,7 +7,7 @@ import pandas as pd
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = [os.getenv("GROUP_CHAT_ID")]
+CHAT_ID = os.getenv("GROUP_CHAT_ID")
 
 # -------- LOAD SYMBOLS --------
 csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'EQUITY_L.csv')
@@ -129,7 +129,7 @@ for start in range(0, len(symbols), BATCH_SIZE):
     time.sleep(1)
 
 # -------- BUILD MESSAGES --------
-lines = [f"**{r['company']}** ({r['symbol']}): {', '.join(r['crossed'])}" for r in results]
+lines = [r['company'] for r in results]
 messages = split_telegram_messages(lines)
 
 # -------- SEND TO TELEGRAM --------
@@ -141,6 +141,7 @@ try:
 
     for msg in messages:
         try:
+            print(f"Sending Telegram message to chat_id={CHAT_ID} with {len(msg)} chars")
             response = requests.post(
                 url,
                 data={
