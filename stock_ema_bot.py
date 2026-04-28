@@ -7,7 +7,9 @@ import pandas as pd
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("GROUP_CHAT_ID")
+CHAT_ID = os.getenv("GROUP_CHAT_ID") or os.getenv("PERSONAL_CHAT_ID")
+print("Loaded BOT_TOKEN:", "Yes" if BOT_TOKEN else "No")
+print("Loaded CHAT_ID from GROUP_CHAT_ID or PERSONAL_CHAT_ID:", "Yes" if CHAT_ID else "No")
 
 # -------- LOAD SYMBOLS --------
 csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'EQUITY_L.csv')
