@@ -7,9 +7,9 @@ import pandas as pd
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-CHAT_ID = os.getenv("GROUP_CHAT_ID")
+CHAT_ID = os.getenv("GROUP_CHAT_ID") or os.getenv("CHAT_ID")
 print("Loaded BOT_TOKEN:", "Yes" if BOT_TOKEN else "No")
-print("Loaded CHAT_ID from GROUP_CHAT_ID", "Yes" if CHAT_ID else "No")
+print("Loaded CHAT_ID from GROUP_CHAT_ID or CHAT_ID:", "Yes" if CHAT_ID else "No")
 
 # -------- LOAD SYMBOLS --------
 csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'EQUITY_L.csv')
@@ -48,8 +48,37 @@ def extract_close_series(data, symbol):
     return close.dropna()
 
 
-def find_crossover(symbol, close):
+def extract_volume_series(data, symbol):
+    ticker = symbol + '.NS'
+    if data is None or data.empty:
+        return None
+
+    if isinstance(data.columns, pd.MultiIndex):
+        tickers = data.columns.get_level_values(0)
+        if ticker not in tickers:
+            return None
+        volume = data[ticker]['Volume']
+    else:
+        if 'Volume' not in data.columns:
+            return None
+        volume = data['Volume']
+
+    if isinstance(volume, pd.DataFrame):
+        if volume.shape[1] == 0:
+            return None
+        volume = volume.iloc[:, 0]
+
+    return volume.dropna()
+
+
+def find_crossover(symbol, close, volume):
     if close is None or len(close) < 200:
+        return None
+
+    if volume is None or len(volume) == 0:
+        return None
+
+    if volume.iloc[-1] <= 50000:
         return None
 
     ema20 = close.ewm(span=20, adjust=False).mean()
@@ -84,7 +113,8 @@ def download_batch(symbol_batch):
             results = {}
             for symbol in symbol_batch:
                 close = extract_close_series(data, symbol)
-                result = find_crossover(symbol, close)
+                volume = extract_volume_series(data, symbol)
+                result = find_crossover(symbol, close, volume)
                 if result:
                     results[symbol] = result
             return results
