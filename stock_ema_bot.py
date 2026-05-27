@@ -88,6 +88,12 @@ def find_crossover(symbol, close, volume):
     if len(close) < 2:
         return None
 
+    near_ema20_50 = abs(ema20.iloc[-1] - ema50.iloc[-1]) <= 0.015 * ema50.iloc[-1]
+    near_ema200 = abs(close.iloc[-1] - ema200.iloc[-1]) <= 0.02 * ema200.iloc[-1]
+
+    if not near_ema20_50 and not near_ema200:
+        return None
+
     crossed = []
     if close.iloc[-2] >= ema20.iloc[-2] and close.iloc[-1] < ema20.iloc[-1]:
         crossed.append('EMA20')
@@ -95,6 +101,10 @@ def find_crossover(symbol, close, volume):
         crossed.append('EMA50')
     if close.iloc[-2] >= ema200.iloc[-2] and close.iloc[-1] < ema200.iloc[-1]:
         crossed.append('EMA200')
+    if near_ema20_50 and 'EMA20' not in crossed and 'EMA50' not in crossed:
+        crossed.append('Near EMA20/50')
+    if near_ema200 and 'EMA200' not in crossed:
+        crossed.append('Near EMA200')
 
     if crossed:
         return {'symbol': symbol, 'company': company_by_symbol.get(symbol, symbol), 'crossed': crossed}
