@@ -12,8 +12,8 @@ print("Loaded BOT_TOKEN:", "Yes" if BOT_TOKEN else "No")
 print("Loaded CHAT_ID from GROUP_CHAT_ID or CHAT_ID:", "Yes" if CHAT_ID else "No")
 
 # -------- LOAD SYMBOLS --------
-excel_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Top500.xlsx')
-df = pd.read_excel(excel_path)
+csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Top500.csv')
+df = pd.read_csv(csv_path)
 symbols = df['SYMBOL'].tolist()
 companies = df['COMPANY'].tolist()
 
