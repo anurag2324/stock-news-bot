@@ -12,8 +12,8 @@ print("Loaded BOT_TOKEN:", "Yes" if BOT_TOKEN else "No")
 print("Loaded CHAT_ID from GROUP_CHAT_ID or CHAT_ID:", "Yes" if CHAT_ID else "No")
 
 # -------- LOAD SYMBOLS --------
-csv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'EQUITY_L.csv')
-df = pd.read_csv(csv_path)
+excel_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'Top500.xlsx')
+df = pd.read_excel(excel_path)
 symbols = df['SYMBOL'].tolist()
 companies = df['COMPANY'].tolist()
 
@@ -141,10 +141,10 @@ def download_batch(symbol_batch):
 
 def split_telegram_messages(lines):
     if not lines:
-        return ["No companies crossed below EMA recently."]
+        return ["No Top500 stocks are near EMA20/50 or EMA200 recently."]
 
     messages = []
-    current = ["Companies that crossed below EMA recently:"]
+    current = ["Top500 stocks who are near to EMA20/50 or EMA200:"]
     current_len = len(current[0]) + 2
 
     for line in lines:
@@ -169,6 +169,8 @@ for start in range(0, len(symbols), BATCH_SIZE):
     batch_results = download_batch(batch)
     results.extend(batch_results.values())
     time.sleep(1)
+
+print("Top500 stocks who are near to EMA20/50 or EMA200:")
 
 # -------- BUILD MESSAGES --------
 lines = [r['company'] for r in results]
