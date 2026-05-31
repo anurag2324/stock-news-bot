@@ -141,8 +141,7 @@ def download_batch(symbol_batch):
     while attempt < MAX_RETRIES:
         try:
             data = yf.download(tickers, period='1y', interval='1d', group_by='ticker', threads=False, progress=False)
-            if data is None or data.empty:
-                return {}
+            # if data is empty (some tickers delisted), continue — per-symbol extraction will skip missing symbols
 
             results = {}
             for symbol in symbol_batch:
@@ -229,21 +228,29 @@ try:
     for msg in messages:
         try:
             print(f"Sending Telegram message to chat_id={CHAT_ID} with {len(msg)} chars")
-            response = requests.post(
-                url,
-                data={
-                    "chat_id": CHAT_ID,
-                    "text": msg,
-                    "parse_mode": "Markdown",
-                    "disable_web_page_preview": True
-                },
-                timeout=10,
-            )
+            base_payload = {
+                "chat_id": CHAT_ID,
+                "text": msg,
+                "disable_web_page_preview": True
+            }
+            # try with Markdown first, then fallback to plain text if Telegram can't parse entities
+            md_payload = dict(base_payload)
+            md_payload["parse_mode"] = "Markdown"
 
+            response = requests.post(url, data=md_payload, timeout=10)
             if response.status_code == 200:
-                print(f"✅ Sent successfully to {CHAT_ID}")
+                print(f"✅ Sent successfully to {CHAT_ID} (Markdown)")
             else:
-                print(f"❌ Telegram Error for {CHAT_ID}:", response.text)
+                resp_text = response.text or ""
+                if "can't parse entities" in resp_text or "Can't find end of the entity" in resp_text:
+                    # retry without parse mode
+                    response2 = requests.post(url, data=base_payload, timeout=10)
+                    if response2.status_code == 200:
+                        print(f"✅ Sent successfully to {CHAT_ID} (plain)")
+                    else:
+                        print(f"❌ Telegram Error for {CHAT_ID} (plain):", response2.text)
+                else:
+                    print(f"❌ Telegram Error for {CHAT_ID}:", response.text)
 
         except Exception as e:
             print(f"❌ Script Error for {CHAT_ID}:", str(e))
