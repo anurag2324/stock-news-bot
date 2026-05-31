@@ -164,10 +164,10 @@ def download_batch(symbol_batch):
 
 def split_telegram_messages(lines):
     if not lines:
-        return ["No Stock_Above5k stocks are near EMA20/50 or EMA200 recently."]
+        return ["No Stock_Above5k stocks are near EMA20/50/200 recently."]
 
     messages = []
-    current = ["Stock_Above5k stocks who are near to EMA20/50 or EMA200:"]
+    current = ["Companies Near EMA 20/50/200:"]
     current_len = len(current[0]) + 2
 
     for line in lines:
@@ -200,18 +200,7 @@ print("Stock_Above5k stocks who are near to EMA20/50 or EMA200:")
 sorted_results = sorted(results, key=lambda r: r.get('score', 0), reverse=True)
 top_results = sorted_results[:MAX_RESULTS]
 
-lines = []
-for r in top_results:
-    pct = r['score'] * 100
-    reasons = '; '.join(r.get('reasons', []))
-    market_cap = r.get('market_cap')
-    market_text = f" | MarketCap: {market_cap}" if market_cap else ""
-    line = (
-        f"{r['symbol']} - {r['company']}: {reasons}"
-        f" | Price: {r['last_price']:.2f} | AvgVol: {r['avg_vol']}"
-        f"{market_text} | Severity: {pct:.2f}%"
-    )
-    lines.append(line)
+lines = [r['company'] for r in top_results]
 
 if not lines:
     lines = ["No Stock_Above5k stocks matched stricter EMA filters today."]
