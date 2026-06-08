@@ -175,9 +175,6 @@ def find_crossover(symbol, close, volume):
     pct_from_200 = abs(close.iloc[-1] - ema200.iloc[-1]) / ema200.iloc[-1]
     score = float(max(pct_from_50, pct_from_200))
 
-    # evaluate historical signal accuracy (quick forward-test)
-    eval_stats = evaluate_signals(close)
-
     return {
         'symbol': symbol,
         'company': company_by_symbol.get(symbol, symbol),
@@ -187,7 +184,6 @@ def find_crossover(symbol, close, volume):
         'score': float(score),
         'last_price': float(close.iloc[-1]),
         'signal': signal_type,
-        'eval': eval_stats,
     }
 
 
@@ -256,21 +252,7 @@ print("Stock_Above5k stocks who are near to EMA20/50 or EMA200:")
 sorted_results = sorted(results, key=lambda r: r.get('score', 0), reverse=True)
 top_results = sorted_results[:MAX_RESULTS]
 
-lines = []
-for r in top_results:
-    sym = r.get('symbol')
-    name = r.get('company')
-    sig = r.get('signal', '')
-    price = r.get('last_price')
-    eval_stats = r.get('eval') or {}
-    acc = eval_stats.get('accuracy')
-    avg_ret = eval_stats.get('avg_return')
-    signals_count = eval_stats.get('signals') or 0
-
-    acc_text = f"{acc:.2f}" if acc is not None else "N/A"
-    avg_text = f"{avg_ret:.2%}" if avg_ret is not None else "N/A"
-
-    lines.append(f"{name} ({sym}): {sig.upper()} @ {price:.2f} | acc={acc_text} avg={avg_text} signals={signals_count}")
+lines = [r['company'] for r in top_results]
 
 if not lines:
     lines = ["No Stock_Above5k stocks matched stricter EMA filters today."]
