@@ -4,7 +4,6 @@ import time
 import os
 from datetime import datetime
 import pandas as pd
-import numpy as np
 
 # -------- CONFIG --------
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -78,49 +77,6 @@ def extract_volume_series(data, symbol):
     return volume.dropna()
 
 
-def evaluate_signals(close, short_span=20, long_span=50, hold_days=5):
-    """Simple forward-test of EMA crossover signals over historical `close` series.
-    Returns accuracy (fraction of signals that were profitable after `hold_days`) and average return.
-    """
-    if close is None or len(close) < max(long_span, hold_days) + 10:
-        return None
-
-    ema_short = close.ewm(span=short_span, adjust=False).mean()
-    ema_long = close.ewm(span=long_span, adjust=False).mean()
-
-    bullish = (ema_short > ema_long).astype(float)
-    crossover = bullish.diff()
-
-    signals_idx = crossover[(crossover == 1.0) | (crossover == -1.0)].index
-    if signals_idx.empty:
-        return {'accuracy': None, 'avg_return': None, 'signals': 0}
-
-    profits = []
-    for t in signals_idx:
-        try:
-            i = close.index.get_loc(t)
-        except Exception:
-            continue
-        entry_price = close.iloc[i]
-        exit_i = i + hold_days
-        if exit_i >= len(close):
-            continue
-        exit_price = close.iloc[exit_i]
-        ret = (exit_price - entry_price) / entry_price
-        # For sell signals (-1), invert return to treat as correct if price fell
-        if crossover.loc[t] == -1.0:
-            ret = -ret
-        profits.append(ret)
-
-    if not profits:
-        return {'accuracy': None, 'avg_return': None, 'signals': 0}
-
-    profitable = sum(1 for p in profits if p > 0)
-    accuracy = profitable / len(profits)
-    avg_ret = float(np.mean(profits))
-    return {'accuracy': float(accuracy), 'avg_return': avg_ret, 'signals': len(profits)}
-
-
 def find_crossover(symbol, close, volume):
     if close is None or len(close) < MIN_DAYS:
         return None
@@ -138,41 +94,39 @@ def find_crossover(symbol, close, volume):
     ema50 = close.ewm(span=50, adjust=False).mean()
     ema200 = close.ewm(span=200, adjust=False).mean()
 
-    if len(close) < 2:
+    if len(close) < 3:
         return None
 
-    bullish = (ema20 > ema50).astype(float)
-    crossover = bullish.diff()
-    last_cross = crossover.iloc[-1]
+    today = -1
+    yesterday = -2
+    bullish_cross = ema20.iloc[yesterday] <= ema50.iloc[yesterday] and ema20.iloc[today] > ema50.iloc[today]
+    bearish_cross = ema20.iloc[yesterday] >= ema50.iloc[yesterday] and ema20.iloc[today] < ema50.iloc[today]
 
-    reasons = []
+    price = close.iloc[today]
+    above_all = price > ema20.iloc[today] and price > ema50.iloc[today] and price > ema200.iloc[today]
+    below_all = price < ema20.iloc[today] and price < ema50.iloc[today] and price < ema200.iloc[today]
+    ema20_slope = ema20.iloc[today] - ema20.iloc[yesterday]
+    ema50_slope = ema50.iloc[today] - ema50.iloc[yesterday]
+
+    vol_recent = volume.iloc[-10:].mean() if len(volume) >= 10 else volume.mean()
+    vol_today = volume.iloc[today]
+    volume_ok = vol_today >= vol_recent and vol_recent >= MIN_AVG_VOLUME
+
     signal_type = None
+    reasons = []
 
-    # Bullish cross: short EMA crosses above long EMA
-    if last_cross == 1.0:
-        # require price above EMA200 for trend confirmation
-        if close.iloc[-1] > ema200.iloc[-1]:
-            signal_type = 'buy'
-            reasons.append('EMA20 crossed above EMA50')
-            reasons.append('Price above EMA200')
-        else:
-            # if not above EMA200, weaken signal but still report as possible
-            signal_type = 'buy'
-            reasons.append('EMA20 crossed above EMA50 (below EMA200)')
-
-    # Bearish cross: short EMA crosses below long EMA
-    elif last_cross == -1.0:
+    if bullish_cross and above_all and ema20.iloc[today] > ema50.iloc[today] > ema200.iloc[today] and ema20_slope > 0 and ema50_slope >= 0 and volume_ok:
+        signal_type = 'buy'
+        reasons.append('Strong bullish EMA crossover with price and volume confirmation')
+    elif bearish_cross and below_all and ema20.iloc[today] < ema50.iloc[today] < ema200.iloc[today] and ema20_slope < 0 and ema50_slope <= 0 and volume_ok:
         signal_type = 'sell'
-        reasons.append('EMA20 crossed below EMA50')
-        if close.iloc[-1] < ema200.iloc[-1]:
-            reasons.append('Price below EMA200')
+        reasons.append('Strong bearish EMA crossover with price and volume confirmation')
 
     if signal_type is None:
         return None
 
-    # severity score: magnitude of crossover and distance from EMA50/EMA200
-    pct_from_50 = abs(close.iloc[-1] - ema50.iloc[-1]) / ema50.iloc[-1]
-    pct_from_200 = abs(close.iloc[-1] - ema200.iloc[-1]) / ema200.iloc[-1]
+    pct_from_50 = abs(price - ema50.iloc[today]) / ema50.iloc[today]
+    pct_from_200 = abs(price - ema200.iloc[today]) / ema200.iloc[today]
     score = float(max(pct_from_50, pct_from_200))
 
     return {
@@ -182,7 +136,7 @@ def find_crossover(symbol, close, volume):
         'reasons': reasons,
         'avg_vol': int(avg_vol),
         'score': float(score),
-        'last_price': float(close.iloc[-1]),
+        'last_price': float(price),
         'signal': signal_type,
     }
 
